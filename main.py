@@ -1,4 +1,7 @@
 import json
+
+import PIL
+from PIL import Image
 import numpy as np
 import torch
 
@@ -32,9 +35,18 @@ for i in np.arange(len(datalist)):
                 'name': 'person',
                 'bndbox': gtbox['vbox']
             }
-            file1 = open('C:\\Studia\\semestr_6\\PZ\\projekt\\zdjecia_txt\\' + adata['ID']+'.txt', "a+")
-            str1 = str(0) + ' '  + str(gtbox['vbox'][0]) + ' '  + str(gtbox['vbox'][1]) + ' '  + \
-                   str(gtbox['vbox'][2]) + ' '  + str(gtbox['vbox'][3]) + '\n'
+            file1 = open('C:\\Studia\\semestr_6\\PZ\\yolov5-master\\data\\imagesAndLabels\\labels\\' + adata['ID']+'.txt', "a+")
+            image = PIL.Image.open('C:\\Studia\\semestr_6\\PZ\\yolov5-master\\data\\imagesAndLabels\\images\\' + adata['ID']+'.jpg')
+            width, height = image.size
+            val = [gtbox['vbox'][0]/width, gtbox['vbox'][1]/height,
+                   gtbox['vbox'][2]/width, gtbox['vbox'][3]/height]
+            for k in range(4):
+                if val[k] <= 0:
+                    val[k] = 0.000001
+                elif val[k] >= 1:
+                    val[k] = 0.999999
+
+            str1 = str(0) + ' ' + str("{:.6f}".format(val[0])) + ' ' + str("{:.6f}".format(val[1])) + ' ' + str("{:.6f}".format(val[2])) + ' ' + str("{:.6f}".format(val[3])) + '\n'
 
             file1.write(str1)
             file1.close()
