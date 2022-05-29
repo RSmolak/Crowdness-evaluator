@@ -1,10 +1,13 @@
-from fastapi import FastAPI, File
+import os
+
+from fastapi import FastAPI, File, UploadFile
 from segmentation import get_yolov5, get_image_from_bytes
 from starlette.responses import Response
 import io
 from PIL import Image
 import json
 from fastapi.middleware.cors import CORSMiddleware
+import shutil
 
 model = get_yolov5()
 
@@ -53,4 +56,16 @@ async def detect_people_return_number(file: bytes = File(...)):
     detect_res = results.pandas().xyxy[0].to_json(orient="records")
     detect_res = json.loads(detect_res)
     number = str(len(detect_res))
+    return {number}
+
+
+@app.post("/file-to-number")
+async def detect_people_return_number(file: UploadFile = File(...)):
+    with open(file.filename, 'wb') as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    results = model(file.filename)
+    detect_res = results.pandas().xyxy[0].to_json(orient="records")
+    detect_res = json.loads(detect_res)
+    number = str(len(detect_res))
+    os.remove(file.filename)
     return {number}
