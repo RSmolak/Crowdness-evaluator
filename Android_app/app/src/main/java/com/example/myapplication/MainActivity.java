@@ -2,15 +2,21 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +26,10 @@ import androidx.core.content.ContextCompat;
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -68,8 +78,12 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                     MY_PERMISSIONS_REQUEST);
         }
+        TextView textView = (findViewById(R.id.textView));
+        textView.setText("Choose photo from gallery");
         Button chooseButton = (findViewById(R.id.ButtonUploadPhoto));
         chooseButton.setOnClickListener(new View.OnClickListener(){
+
+
             @Override
             public void onClick(View view)
             {
@@ -82,36 +96,47 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1)
+        if (requestCode == 1) {
             if (resultCode == Activity.RESULT_OK) {
 
                 Uri selectedImage = data.getData();
-
-
                 String filePath = getPath(selectedImage);
-
-
                 String fileExtn = filePath.substring(filePath.lastIndexOf(".") + 1);
+
+                InputStream inputStream;
+                try {
+                    inputStream = getContentResolver().openInputStream(selectedImage);
+                    Bitmap image = BitmapFactory.decodeStream(inputStream);
+                    ImageView myImage = (ImageView) findViewById(R.id.imageView);
+                    myImage.setImageBitmap(image);
+
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
 
 
                 //sendData();
                 //image_name_tv.setText(filePath);
 
+// To dismiss the dialog
+
+                //ProgressDialog dialog = ProgressDialog.show(this, "Down Loading", "Please wait ...", true);
                 if (fileExtn.equals("img") || fileExtn.equals("jpg") || fileExtn.equals("jpeg")
                         || fileExtn.equals("gif") || fileExtn.equals("png")) {
-                    Toast.makeText(getApplicationContext(), "You have chosen a photo"+fileExtn, Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "You have chosen a photo" + fileExtn, Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(getApplicationContext(), "Wrong format of a photo", Toast.LENGTH_LONG).show();
                 }
-                if (! Python.isStarted()) {
+                if (!Python.isStarted()) {
                     Python.start(new AndroidPlatform(this));
                 }
-
                 Python py = Python.getInstance();
                 PyObject pyobj = py.getModule("myscript");
-                PyObject obj = pyobj.callAttr("main",filePath);
+                PyObject obj = pyobj.callAttr("main", filePath);
                 Log.i("Info2", String.valueOf(obj));
-                Toast.makeText(getApplicationContext(), obj.toString(), Toast.LENGTH_LONG).show();
+                TextView textView = (findViewById(R.id.textView));
+                textView.setText(obj.toString() + " people found");
+                //Toast.makeText(getApplicationContext(), obj.toString(), Toast.LENGTH_LONG).show();
 
 
                 //Log.i("Info",filePath);
@@ -131,7 +156,10 @@ public class MainActivity extends AppCompatActivity {
                 //uploadFile(selectedImage);
                 //Toast.makeText(getApplicationContext(), HowManyPeople, Toast.LENGTH_LONG).show();
             }
+        }
     }
+
+
     public String getPath(Uri uri)
     {
         String[] projection = { MediaStore.Images.Media.DATA };
